@@ -1,0 +1,11 @@
+# Rust
+target/
+*.lock
+
+# Python
+venv/
+.ipynb_checkpoints/
+
+# Fuzzer
+runs/
+legendary_runs/

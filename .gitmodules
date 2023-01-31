@@ -1,0 +1,6 @@
+[submodule "LibAFL"]
+	path = LibAFL
+	url = git@github.com:TeumessianFox/LibAFL.git
+[submodule "qemu-libafl-asp"]
+	path = qemu-libafl-asp
+	url = git@github.com:TeumessianFox/qemu-libafl-asp.git

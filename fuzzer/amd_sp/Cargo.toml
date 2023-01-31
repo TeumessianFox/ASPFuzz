@@ -1,0 +1,33 @@
+[package]
+name = "aspfuzz"
+version = "0.8.0"
+authors = ["Patrick Gersch"]
+edition = "2018"
+
+[features]
+default = ["std"]
+std = []
+
+# Fuzzer performance measurement feature
+performance = []
+
+# Fuzzer features
+debug = []
+multicore = []
+
+[profile.release]
+debug = true
+
+[dependencies]
+libafl = { path = "../../LibAFL/libafl/", default-features = false, features = ["prelude"] }
+libafl_qemu = { path = "../../LibAFL/libafl_qemu/", features = ["arm", "systemmode"], default-features = false }
+
+libasp = { path = "../libasp" }
+
+serde = { version = "1.0", default-features = false, features = ["alloc"] } # serialization lib
+log = "0.4"
+env_logger = "0.9"
+nix = "0.24"
+chrono = "0.4"
+rangemap = "1.0"
+clap = { version = "4.0", features = ["derive"] }

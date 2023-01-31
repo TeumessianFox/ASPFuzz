@@ -1,0 +1,105 @@
+# Variables
+[env]
+PROJECT_DIR={ script = ["pwd"] }
+CROSS_CC="arm-none-eabi-gcc"
+CUSTOM_QEMU_DIR="${PROJECT_DIR}/../../qemu-libafl-asp"
+CUSTOM_QEMU_NO_BUILD={ value = "yes", condition = { files_exist = [ "${CUSTOM_QEMU_DIR}/build/libqemu-system-arm.so" ]} }
+# Disable color codes in env_logger
+RUST_LOG_STYLE="never"
+
+[tasks.unsupported]
+script_runner="@shell"
+script='''
+echo "Qemu fuzzer not supported on windows/mac"
+'''
+
+[tasks.fuzzer]
+linux_alias = "fuzzer_unix"
+mac_alias = "fuzzer_unix"
+windows_alias = "unsupported"
+
+[tasks.fuzzer_unix]
+command = "cargo"
+args = ["build", "--release"]
+
+# Run the fuzzer in multicore mode
+[tasks.run_fast]
+linux_alias = "run_fast_unix"
+mac_alias = "run_fast_unix"
+windows_alias = "unsupported"
+
+[tasks.run_fast_unix]
+env = { "RUST_LOG" = "off" }
+command = "cargo"
+args = [
+    "run", "--release",
+    "--features", "multicore",
+    "--",
+    "${@}",
+]
+dependencies = [ "fuzzer" ]
+
+# Run the fuzzer
+[tasks.run]
+linux_alias = "run_unix"
+mac_alias = "run_unix"
+windows_alias = "unsupported"
+
+[tasks.run_unix]
+env = { "RUST_LOG" = "off" }
+command = "cargo"
+args = [
+    "run", "--release",
+    "--",
+    "${@}",
+]
+dependencies = [ "fuzzer" ]
+
+# Test/debug the fuzzer
+[tasks.test]
+linux_alias = "test_unix"
+mac_alias = "test_unix"
+windows_alias = "unsupported"
+
+[tasks.test_unix]
+env = { "RUST_LOG" = "debug" }
+command = "cargo"
+args = [
+    "run", "--release",
+    "--features", "debug",
+    "--",
+    "${@}",
+]
+dependencies = [ "fuzzer" ]
+
+# Performance measurements
+[tasks.perf]
+linux_alias = "perf_unix"
+mac_alias = "perf_unix"
+windows_alias = "unsupported"
+
+[tasks.perf_unix]
+env = { "RUST_LOG" = "off" }
+command = "cargo"
+args = [
+    "run", "--release",
+    "--features", "performance",
+    "--",
+    "${@}",
+]
+dependencies = [ "fuzzer" ]
+
+# Clean up
+[tasks.clean]
+linux_alias = "clean_unix"
+mac_alias = "clean_unix"
+windows_alias = "unsupported"
+
+[tasks.clean_unix]
+# Disable default `clean` definition
+clear = true
+script_runner="@shell"
+script='''
+cargo clean
+rm -rf runs/
+'''

@@ -1,0 +1,132 @@
+---
+# QEMU configuration
+qemu:
+    # Zen generation to emulate
+    zen:                "Zen3"
+    # On-chip bootloader to use
+    on_chip_bl_path:    "bins/on-chip-bl-Ryzen-Zen3-Desktop"
+
+# Flash informations
+flash:
+    # Start of flash mmap in SMN memory space
+    start_smn:      0x44000000
+    # Size of flash memory
+    size:           0x01000000
+    # Start of flash mmap area in cpu physical memory
+    start_cpu:      0x02000000
+    # Base image in flash memory
+    base:           "bins/ASUS_PRIME-B450M-A-ASUS-1201.ROM"
+
+# Input data and area
+input:
+    # Initial inputs for the fuzzer
+    initial:
+        -   "bins/ASUS_PRIME-B450M-A-ASUS-1201.ROM"
+    # Input bytes in-order to flash memory
+    mem:
+        # FET
+        - addr:     0x00020000
+          size:     0x40
+        # Combo Dir
+        - addr:     0x000c0000
+          size:     0x300
+        # Dir
+        #- addr:     0x000d1000
+        - addr:     0x00299000
+          size:     0x300
+        # Entry header
+        - addr:     0x006a8400
+          size:     0x100
+    # Set fixed values at certain addresses
+    fixed:
+        # Combo Dir addr
+        - addr:     0x00020014
+          val:      0x000c0000
+        # Dir addr
+        - addr:     0x000c0028
+          val:      0x00299000
+        # Public key addr
+        - addr:     0x000c0018
+          val:      0x00299400
+        - addr:     0x00299018
+          val:      0x00299400
+        # Entry header addr
+        - addr:     0x000c0038
+          val:      0x006a8400
+        - addr:     0x00299028
+          val:      0x006a8400
+
+# Harness
+harness:
+    # parse_psp_flash() after on_chip_bl_init_SPI_maybe()
+    start:          0xffff2bf8
+    sinks:
+        # on_chip_bl_post_status_code_maybe() in loop wfi
+        - 0xffff05c0
+        # call_off_chip
+        - 0xffff24b8
+
+# Tunnels consist of entries with an "entry" and an "exit"
+tunnels:
+    cmps:
+        # on_chip_bl_fletscher32() #1
+        - addr:     0xffff2058
+          r0:       "R3"
+        # on_chip_bl_fletscher32() #2
+        - addr:     0xffff2114
+          r0:       "R3"
+
+# Define what crashes are
+crashes:
+    # Breakpoints as crashes
+    breakpoints:
+        - null
+    mmap:
+        # Defining the none-executable address space
+        no_exec:
+            - begin:  0x0
+              end:    0xffff0000
+        # Flash read function for no_write_flash_fn
+        flash_read_fn:  0xffff731c
+        # Only hooks the on_chip_bl_flash_read()
+        # don't hook call at no_hook
+        # (recommended)
+        no_write_flash_fn:
+            # SRAM region (BootROMServicePage) which can be used as a hash for the public key
+            - begin:    0x4fbb0
+              end:      0x4fbd0
+              no_hook:  null
+            # SRAM region (BootROMServicePage) storing the public key
+            - begin:    0x4f410
+              end:      0x4f850
+              no_hook:
+                    -   0xffff2184
+        # Write hooks on every ldr operation
+        # except on addresses listed in "no_ldr"
+        # (NOT recommended, very slow)
+        no_write_hooks:
+            - begin:  null
+              end:    null
+              no_ldr: null
+#            - begin:    0x3f8a0     # SRAM region which can be used as a hash for the public key
+#              end:      0x3f8c0
+#              no_ldr:
+#                  -     0xffff2f9c
+#                  -     0xffff2fa0
+#                  -     0xffff2fa4
+#                  -     0xffff2fa8
+#                  -     0xffff2fac
+#                  -     0xffff2fb0
+#                  -     0xffff2fb4
+#                  -     0xffff2fb8
+
+# Snapshotting behaviour:
+# - Use enum for "default", "on_crash", "periodically":
+#   ["SuperLazy", "Lazy", "RustSnapshot", "HardReset"]
+# - "period":
+#   number of testcases before running state_rest "periodically"
+snapshot:
+    default:        "SuperLazy"
+    on_crash:       "HardReset"
+    periodically:   "RustSnapshot"
+    period:         100000

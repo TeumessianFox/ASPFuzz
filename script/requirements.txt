@@ -1,0 +1,7 @@
+numpy
+matplotlib
+pandas
+pyyaml
+notebook
+seaborn
+psptool
